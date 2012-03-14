@@ -14,6 +14,10 @@ function ApplicationWindow() {
 	var firstView = new FirstView();
 	self.add(firstView);
 	
+	// test loading opentok module
+	var opentok = require('com.tokbox.ti.opentok');
+	Ti.API.info("module is => " + opentok);
+	
 	return self;
 }
 
