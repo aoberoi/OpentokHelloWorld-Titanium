@@ -2,7 +2,7 @@
 var self, opentok, session, subscribers;
 
 var CONFIG = {
-	sessionId: '1sdemo00855f8290f8efa648d9347d718f7e06fd',
+	sessionId: '1_MX4wfn4yMDEyLTA0LTIxIDIwOjEwOjIzLjM5NTIxMiswMDowMH4wLjg5MTk2MDUyODI5NH4',
 	apiKey: '1127',
 	token: 'devtoken'
 };
@@ -41,7 +41,7 @@ function ApplicationWindow() {
 	session.connect(CONFIG.apiKey, CONFIG.token);
 	
 	// initialize some data structures
-	subscribers = new Array();
+	subscribers = {};
 	
 	return self;
 }
@@ -53,20 +53,37 @@ function ApplicationWindow() {
  * 		@property {Session} source The session (proxy object) which just connected
  */
 function sessionConnectedHandler(event) {
-	var i, newSubscriber;
+	var i, aStream;
 	
-	Ti.API.info("session connected handler is fired");
+	Ti.API.info("session connected handler fired");
+	
+	var streams = event.source.streams;
+	
+	Ti.API.info("initial number of streams: " + streams.length);
 	
 	// For all of the existing streams in the session, create a subscriber
-	for (i = 0; i < event.source.streams.length; i++) {
-		// Debug info
-		Ti.API.info("Stream #" + i + ": " + event.source.streams[i].streamId);
+	for (i = 0; i < streams.length; i++) {
+		aStream = streams[i];
 		
-		// Create a subscriber object (its view is not necessarily on screen, but data is being streamed)
-		//newSubscriber = opentok.createSubscriber({ stream: event.source.streams[i] });
-		//subscribers.push(newSubscriber);
-		
-		// The new subscriber's view has some default sizing, but we should specify the desired sizing.
+		// suscribe to stream if its not my own
+		if (session.connection.connectionId !== aStream.connection.connectionId) {
+			subscribeToStream(aStream);
+		}
+	}
+}
+
+function subscribeToStream(stream) {
+	var newSubscriber = session.subscribe(stream);
+	subscribers[stream.streamId] = newSubscriber;
+	
+	// Add Event Listeners
+	newSubscriber.addEventListener('subscriberConnected', subscriberConnectedHandler);
+	newSubscriber.addEventListener('subscriberFailed', subscriberFailedHandler);
+	newSubscriber.addEventListener('subscriberStarted', subscriberStartedHandler);
+	
+	// TODO: Add the view
+	
+	// The new subscriber's view has some default sizing, but we should specify the desired sizing.
 		//newSubscriber.view.top		= 0;
 		//newSubscriber.view.left		= 0;
 		//newSubscriber.view.width	= 120;
@@ -74,7 +91,44 @@ function sessionConnectedHandler(event) {
 		
 		// Add the view to the screen
 		//self.add(newSubscriber.view);
+		
+	Ti.API.info(subscribers);
+}
+
+function removeSubscriber(stream) {
+	var aSubscriber;
+	if (subscribers[stream.streamId] !== undefined) {
+		aSubscriber = subscribers[stream.streamId];
+		
+		// Remove event listeners
+		aSubscriber.removeEventListener('subscriberConnected', subscriberConnectedHandler);
+		aSubscriber.removeEventListener('subscriberFailed', subscriberFailedHandler);
+		aSubscriber.removeEventListener('subscriberStarted', subscriberStartedHandler);
+		
+		// TODO: Remove views
+		
+		
+		// Close the subscriber and stop the media stream gracefully
+		aSubscriber.close();
+		
+		// Get rid of the subscriber reference
+		delete subscribers[stream.streamId];
 	}
+	
+	Ti.API.info(subscribers);
+}
+
+function subscriberConnectedHandler(event) {
+	Ti.API.info("subscriber connected handler fired");
+}
+
+function subscriberFailedHandler(event) {
+	// TODO: figure out how to read the error message
+	Ti.API.info("subscriber failed handler fired with message:\n" + event);
+}
+
+function subscriberStartedHandler(event) {
+	Ti.API.info("subscriber started handler fired");
 }
 
 /* 
@@ -85,7 +139,7 @@ function sessionConnectedHandler(event) {
  * 		@property {Session} source The session (proxy object) which just disconnected
  */
 function sessionDisconnectedHandler(event) {
-	
+	Ti.API.info("session disconnected handler fired");
 }
 
 /* 
@@ -96,7 +150,8 @@ function sessionDisconnectedHandler(event) {
  * 		@property {Error} error Error information
  */
 function sessionFailedHandler(event) {
-	
+	// TODO: figure out how to read the error message
+	Ti.API.info("session failed handler fired with message:\n" + event);
 }
 
 /* 
@@ -107,7 +162,16 @@ function sessionFailedHandler(event) {
  * 		@property {Stream} stream The stream (proxy object) that was just added to the session
  */
 function streamCreatedHandler(event) {
+	var aStream = event.stream;
 	
+	Ti.API.info('stream created with id: ' + aStream.streamId);
+	
+	Ti.API.info('now the number of streams in the session is ' + session.streams.length);
+	
+	// suscribe to stream if its not my own
+	if (session.connection.connectionId !== aStream.connection.connectionId) {
+		subscribeToStream(aStream);
+	}
 }
 
 
@@ -119,7 +183,14 @@ function streamCreatedHandler(event) {
  * 		@property {Stream} stream The stream (proxy object) that just dropped in the session
  */
 function streamDestroyedHandler(event) {
+	var aStream = event.stream;
 	
+	Ti.API.info('stream destroyed with id: ' +  aStream.streamId);
+	
+	// close any subscribers this stream may have
+	removeSubscriber(aStream);
+	
+	Ti.API.info('now the number of streams in the session is ' + session.streams.length);
 }
 
 //make constructor function the public component interface
