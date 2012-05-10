@@ -1,5 +1,5 @@
-// Private data in this window's sub-context
-var self, opentok, session, subscribers;
+// Private data
+var self, logArea, opentok, session, subscribers, publisher, publishButton;
 
 var CONFIG = {
 	sessionId: '1_MX4wfn4yMDEyLTA0LTIxIDIwOjEwOjIzLjM5NTIxMiswMDowMH4wLjg5MTk2MDUyODI5NH4',
@@ -9,20 +9,43 @@ var CONFIG = {
 
 // Application Window Component Constructor
 function ApplicationWindow() {
-	//load component dependencies
-	var FirstView = require('ui/FirstView');
 		
 	//create component instance
 	self = Ti.UI.createWindow({
 		backgroundColor:'#ffffff',
 		navBarHidden:true,
-		exitOnClose:true
+		exitOnClose:true,
+		layout: 'vertical'
 	});
-		
-	//construct UI
-	var firstView = new FirstView();
-	self.add(firstView);
+	logArea = Ti.UI.createTextArea({
+  		height : 200,
+  		width : 300,
+  		top : 20,
+  		textAlign : 'left',
+  		borderWidth : 2,
+  		borderColor : '#bbb',
+  		borderRadius : 5,
+  		enabled: false,
+  		editable: false
+	});
+	publishButton = Ti.UI.createButton({
+		 title: 'Publish',
+		 top: 20,
+		 width: 100,
+		 height: 50,
+		 enabled: false
+	});
 	
+	self.add(logArea);
+	self.add(publishButton);
+	
+	initializeOpentok();
+	
+	return self;
+}
+
+
+function initializeOpentok() {
 	// loading opentok module
 	opentok = require('com.tokbox.ti.opentok');
 	Ti.API.info("module is => " + opentok);
@@ -37,13 +60,14 @@ function ApplicationWindow() {
 	session.addEventListener('streamCreated', streamCreatedHandler);
 	session.addEventListener('streamDestroyed', streamDestroyedHandler);
 	
+	// add actions for the publish button
+	publishButton.addEventListener('click', publishToSession);
+	
 	// connect to the session
 	session.connect(CONFIG.apiKey, CONFIG.token);
 	
 	// initialize some data structures
 	subscribers = {};
-	
-	return self;
 }
 
 /* 
@@ -55,11 +79,13 @@ function ApplicationWindow() {
 function sessionConnectedHandler(event) {
 	var i, aStream;
 	
-	Ti.API.info("session connected handler fired");
+	log("session connected handler fired");
+	
+	publishButton.enabled = true;
 	
 	var streams = event.source.streams;
 	
-	Ti.API.info("initial number of streams: " + streams.length);
+	log("initial number of streams: " + streams.length);
 	
 	// For all of the existing streams in the session, create a subscriber
 	for (i = 0; i < streams.length; i++) {
@@ -92,7 +118,7 @@ function subscribeToStream(stream) {
 		// Add the view to the screen
 		//self.add(newSubscriber.view);
 		
-	Ti.API.info(subscribers);
+	log(JSON.stringify(subscribers));
 }
 
 function removeSubscriber(stream) {
@@ -115,20 +141,20 @@ function removeSubscriber(stream) {
 		delete subscribers[stream.streamId];
 	}
 	
-	Ti.API.info(subscribers);
+	log(JSON.stringify(subscribers));
 }
 
 function subscriberConnectedHandler(event) {
-	Ti.API.info("subscriber connected handler fired");
+	log("subscriber connected handler fired");
 }
 
 function subscriberFailedHandler(event) {
 	// TODO: figure out how to read the error message
-	Ti.API.info("subscriber failed handler fired with message:\n" + event);
+	log("subscriber failed handler fired with message:\n" + event);
 }
 
 function subscriberStartedHandler(event) {
-	Ti.API.info("subscriber started handler fired");
+	log("subscriber started handler fired");
 }
 
 /* 
@@ -139,7 +165,8 @@ function subscriberStartedHandler(event) {
  * 		@property {Session} source The session (proxy object) which just disconnected
  */
 function sessionDisconnectedHandler(event) {
-	Ti.API.info("session disconnected handler fired");
+	log("session disconnected handler fired");
+	publishButton.enabled = false;
 }
 
 /* 
@@ -151,7 +178,10 @@ function sessionDisconnectedHandler(event) {
  */
 function sessionFailedHandler(event) {
 	// TODO: figure out how to read the error message
-	Ti.API.info("session failed handler fired with message:\n" + event);
+	log("session failed handler fired with message:\n" + event);
+	// TODO: is this necessary? will the publish button ever have been enabled?
+	//       does this only fire when connect fails, or when i disconnect mid-session?
+	publishButton.enabled = false;
 }
 
 /* 
@@ -164,9 +194,9 @@ function sessionFailedHandler(event) {
 function streamCreatedHandler(event) {
 	var aStream = event.stream;
 	
-	Ti.API.info('stream created with id: ' + aStream.streamId);
+	log('stream created with id: ' + aStream.streamId);
 	
-	Ti.API.info('now the number of streams in the session is ' + session.streams.length);
+	log('now the number of streams in the session is ' + session.streams.length);
 	
 	// suscribe to stream if its not my own
 	if (session.connection.connectionId !== aStream.connection.connectionId) {
@@ -185,12 +215,44 @@ function streamCreatedHandler(event) {
 function streamDestroyedHandler(event) {
 	var aStream = event.stream;
 	
-	Ti.API.info('stream destroyed with id: ' +  aStream.streamId);
+	log('stream destroyed with id: ' +  aStream.streamId);
 	
 	// close any subscribers this stream may have
 	removeSubscriber(aStream);
 	
-	Ti.API.info('now the number of streams in the session is ' + session.streams.length);
+	log('now the number of streams in the session is ' + session.streams.length);
+}
+
+function publishToSession(event) {
+	publisher = session.publish();
+	
+	publisher.addEventListener('publisherFailed', publisherFailedHandler);
+	publisher.addEventListener('publisherStarted', publisherStartedHandler);
+	publisher.addEventListener('publisherStopped', publisherStoppedHandler);
+	
+	publishButton.enabled = false;
+	
+}
+
+function publisherFailedHandler(event) {
+	log('publisher failed');
+	publishButton.enabled = true;
+	delete publisher;
+}
+
+function publisherStartedHandler(event) {
+	log('publisher started');
+}
+
+function publisherStoppedHandler(event) {
+	log('publisher stopped');
+	publishButton.enabled = true;
+	delete publisher;
+}
+
+function log(message) {
+	logArea.value += ('\n' + message);
+	// TODO: replicate logArea.scrollToBottom()
 }
 
 //make constructor function the public component interface
