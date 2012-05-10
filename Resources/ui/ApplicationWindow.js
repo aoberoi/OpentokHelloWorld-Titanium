@@ -29,7 +29,7 @@ function ApplicationWindow() {
   		editable: false
 	});
 	publishButton = Ti.UI.createButton({
-		 title: 'Publish',
+		 title: 'Disconnected',
 		 top: 20,
 		 width: 100,
 		 height: 50,
@@ -60,9 +60,6 @@ function initializeOpentok() {
 	session.addEventListener('streamCreated', streamCreatedHandler);
 	session.addEventListener('streamDestroyed', streamDestroyedHandler);
 	
-	// add actions for the publish button
-	publishButton.addEventListener('click', publishToSession);
-	
 	// connect to the session
 	session.connect(CONFIG.apiKey, CONFIG.token);
 	
@@ -82,6 +79,7 @@ function sessionConnectedHandler(event) {
 	log("session connected handler fired");
 	
 	publishButton.enabled = true;
+	allowPublishing(true);
 	
 	var streams = event.source.streams;
 	
@@ -167,6 +165,7 @@ function subscriberStartedHandler(event) {
 function sessionDisconnectedHandler(event) {
 	log("session disconnected handler fired");
 	publishButton.enabled = false;
+	publishButton.title = 'Disconnected';
 }
 
 /* 
@@ -182,6 +181,7 @@ function sessionFailedHandler(event) {
 	// TODO: is this necessary? will the publish button ever have been enabled?
 	//       does this only fire when connect fails, or when i disconnect mid-session?
 	publishButton.enabled = false;
+	publishButton.title = 'Disconnected';
 }
 
 /* 
@@ -230,14 +230,19 @@ function publishToSession(event) {
 	publisher.addEventListener('publisherStarted', publisherStartedHandler);
 	publisher.addEventListener('publisherStopped', publisherStoppedHandler);
 	
-	publishButton.enabled = false;
+	allowPublishing(false);
 	
+}
+
+function unpublishToSession(event) {
+	session.unpublish();
+	
+	allowPublishing(true);
 }
 
 function publisherFailedHandler(event) {
 	log('publisher failed');
-	publishButton.enabled = true;
-	delete publisher;
+	allowPublishing(true);
 }
 
 function publisherStartedHandler(event) {
@@ -246,8 +251,20 @@ function publisherStartedHandler(event) {
 
 function publisherStoppedHandler(event) {
 	log('publisher stopped');
-	publishButton.enabled = true;
-	delete publisher;
+	allowPublishing(true);
+}
+
+function allowPublishing(enabled) {
+	
+	if (enabled) {
+		publishButton.removeEventListener('click', unpublishToSession);
+		publishButton.addEventListener('click', publishToSession);
+		publishButton.title = "Publish";
+	} else {
+		publishButton.removeEventListener('click', publishToSession);
+		publishButton.addEventListener('click', unpublishToSession);
+		publishButton.title = "Unpublish";
+	}
 }
 
 function log(message) {
