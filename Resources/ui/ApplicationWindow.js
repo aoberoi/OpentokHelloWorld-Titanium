@@ -97,6 +97,7 @@ function sessionConnectedHandler(event) {
 }
 
 function subscribeToStream(stream) {
+	var subscriberView;
 	var newSubscriber = session.subscribe(stream);
 	subscribers[stream.streamId] = newSubscriber;
 	
@@ -105,16 +106,17 @@ function subscribeToStream(stream) {
 	newSubscriber.addEventListener('subscriberFailed', subscriberFailedHandler);
 	newSubscriber.addEventListener('subscriberStarted', subscriberStartedHandler);
 	
-	// TODO: Add the view
+	// Create the subscriber view
+	subscriberView = newSubscriber.createView({
+		width: 200,
+		height: 150,
+		top: 20
+	});
 	
-	// The new subscriber's view has some default sizing, but we should specify the desired sizing.
-		//newSubscriber.view.top		= 0;
-		//newSubscriber.view.left		= 0;
-		//newSubscriber.view.width	= 120;
-		//newSubscriber.view.height	= 90;
+	log(' subscriber view to be added: ' + JSON.stringify(subscriberView));
 		
-		// Add the view to the screen
-		//self.add(newSubscriber.view);
+	// Add the subscriber view to the screen
+	self.add(subscriberView);
 		
 	log(JSON.stringify(subscribers));
 }
