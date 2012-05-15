@@ -7,7 +7,7 @@
         <target device="android">false</target>
         <target device="blackberry">false</target>
     </deployment-targets>
-    <sdk-version>1.8.2</sdk-version>
+    <sdk-version>2.0.1.GA2</sdk-version>
     <id>com.tokbox.helloworld.ti</id>
     <name>OpentokHelloWorld</name>
     <version>0.1</version>
@@ -37,6 +37,6 @@
     </iphone>
     <android xmlns:android="http://schemas.android.com/apk/res/android"/>
     <modules>
-    	<module version="0.1">com.tokbox.ti.opentok</module>
+        <module version="0.1">com.tokbox.ti.opentok</module>
     </modules>
 </ti:app>

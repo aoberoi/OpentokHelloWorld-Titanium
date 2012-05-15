@@ -26,7 +26,8 @@ function ApplicationWindow() {
   		borderColor : '#bbb',
   		borderRadius : 5,
   		enabled: false,
-  		editable: false
+  		editable: false,
+  		value: ''
 	});
 	publishButton = Ti.UI.createButton({
 		 title: 'Disconnected',
@@ -110,7 +111,8 @@ function subscribeToStream(stream) {
 	subscriberView = newSubscriber.createView({
 		width: 200,
 		height: 150,
-		top: 20
+		top: 20,
+		backgroundColor: 'blue'
 	});
 	
 	log(' subscriber view to be added: ' + JSON.stringify(subscriberView));
@@ -129,12 +131,10 @@ function removeSubscriber(stream) {
 		// Remove event listeners
 		aSubscriber.removeEventListener('subscriberConnected', subscriberConnectedHandler);
 		aSubscriber.removeEventListener('subscriberFailed', subscriberFailedHandler);
-		aSubscriber.removeEventListener('subscriberStarted', subscriberStartedHandler);
-		
-		// TODO: Remove views
-		
+		aSubscriber.removeEventListener('subscriberStarted', subscriberStartedHandler);		
 		
 		// Close the subscriber and stop the media stream gracefully
+		self.remove(aSubscriber.view);
 		aSubscriber.close();
 		
 		// Get rid of the subscriber reference
