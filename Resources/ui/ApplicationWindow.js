@@ -109,8 +109,8 @@ function subscribeToStream(stream) {
 	
 	// Create the subscriber view
 	subscriberView = newSubscriber.createView({
-		width: 200,
-		height: 150,
+		width: 75,
+		height: 50,
 		top: 20,
 		backgroundColor: 'blue'
 	});
