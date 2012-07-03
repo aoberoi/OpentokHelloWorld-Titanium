@@ -7,8 +7,8 @@
         <target device="android">false</target>
         <target device="blackberry">false</target>
     </deployment-targets>
-    <sdk-version>2.0.2.GA</sdk-version>
-    <id>com.tokbox.helloworld</id>
+    <sdk-version>2.1.0.GA</sdk-version>
+    <id>com.tokbox.helloworld.ti</id>
     <name>OpentokHelloWorld</name>
     <version>0.1</version>
     <publisher>Ankur Oberoi</publisher>
@@ -24,17 +24,18 @@
     <navbar-hidden>false</navbar-hidden>
     <analytics>true</analytics>
     <guid>5d339170-44f1-4ed4-ac70-77ec8ae30ce4</guid>
-    <iphone>
-        <orientations device="iphone">
-            <orientation>Ti.UI.PORTRAIT</orientation>
-        </orientations>
-        <orientations device="ipad">
-            <orientation>Ti.UI.PORTRAIT</orientation>
-            <orientation>Ti.UI.UPSIDE_PORTRAIT</orientation>
-            <orientation>Ti.UI.LANDSCAPE_LEFT</orientation>
-            <orientation>Ti.UI.LANDSCAPE_RIGHT</orientation>
-        </orientations>
-    </iphone>
+    <ios>
+    	<plist>
+    		<dict>
+    			<key>UISupportedInterfaceOrientations</key>
+    			<array>
+    				<string>UIInterfaceOrientationPortrait</string>
+    			</array>
+    			<key>OTAssetBundlePath</key>
+    			<string>modules/com.tokbox.ti.opentok</string>
+    		</dict>
+    	</plist>
+    </ios>
     <android xmlns:android="http://schemas.android.com/apk/res/android"/>
     <modules>
         <module version="0.1">com.tokbox.ti.opentok</module>
